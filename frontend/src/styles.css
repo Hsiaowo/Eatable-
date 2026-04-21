@@ -1,0 +1,179 @@
+:root {
+  font-family: "Segoe UI", sans-serif;
+  color: #183028;
+  background: linear-gradient(180deg, #f5f0e7 0%, #eef6ee 100%);
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  color: #183028;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 32px 16px;
+}
+
+.page,
+.card {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.hero,
+.panel {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid #dce8dc;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(24, 48, 40, 0.08);
+}
+
+.hero h1,
+.panel h1,
+.panel h2 {
+  margin-top: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.button {
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  background: #1f6b52;
+  color: #fff;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.button.secondary {
+  background: #d8e8dc;
+  color: #183028;
+}
+
+.grid {
+  display: grid;
+  gap: 16px;
+}
+
+.two-col {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.upload-box,
+.summary-box {
+  border: 2px dashed #9dbcaa;
+  border-radius: 16px;
+  padding: 20px;
+  background: #f9fcf8;
+}
+
+.input {
+  width: 100%;
+  border: 1px solid #c7d8cb;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+}
+
+.field-label {
+  display: block;
+  margin: 14px 0 8px;
+  font-weight: 600;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 220px;
+  border: 1px solid #c7d8cb;
+  border-radius: 12px;
+  padding: 12px;
+  resize: vertical;
+  background: #fff;
+}
+
+.hint {
+  margin: 8px 0 0;
+  color: #45685a;
+}
+
+.error-text {
+  color: #9d2c2c;
+  font-weight: 600;
+}
+
+.receipt-preview {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: "Consolas", monospace;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid #dce8dc;
+}
+
+.table input[type="date"] {
+  border: 1px solid #c7d8cb;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.pill-list {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 0;
+  list-style: none;
+}
+
+.pill {
+  background: #ebf5ed;
+  border: 1px solid #d4e7d7;
+  border-radius: 999px;
+  padding: 8px 12px;
+}
+
+@media (max-width: 640px) {
+  .app-shell {
+    padding: 16px 12px;
+  }
+
+  .hero,
+  .panel {
+    padding: 18px;
+  }
+}

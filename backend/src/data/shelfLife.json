@@ -1,0 +1,22 @@
+{
+  "strawberry": {
+    "category": "fruit",
+    "fridgeDays": 4
+  },
+  "spinach": {
+    "category": "vegetable",
+    "fridgeDays": 5
+  },
+  "milk": {
+    "category": "dairy",
+    "fridgeDays": 6
+  },
+  "banana": {
+    "category": "fruit",
+    "fridgeDays": 3
+  },
+  "avocado": {
+    "category": "fruit",
+    "fridgeDays": 4
+  }
+}
