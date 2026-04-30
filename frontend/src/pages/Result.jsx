@@ -1,10 +1,14 @@
 import { formatDate } from "../utils/formatDate";
 
-function Result({ items, downloadName, onDownloadAgain, onRestart }) {
+function Result({ items, htmlSummary, downloadName, onDownloadAgain, onRestart }) {
   return (
     <main className="page panel">
       <h1>Calendar Export Ready</h1>
       <p>The included reminders below were exported as an `.ics` calendar file.</p>
+      <div
+        className="summary-box llm-html"
+        dangerouslySetInnerHTML={{ __html: htmlSummary || "<p>No LLM summary available.</p>" }}
+      />
       <ul className="pill-list">
         {items.map((item) => (
           <li className="pill" key={`${item.normalizedName}-${item.reminderDate}`}>

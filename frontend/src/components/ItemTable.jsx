@@ -23,6 +23,8 @@ function ItemTable({ items, setItems }) {
           <th>Raw Item</th>
           <th>Normalized</th>
           <th>Category</th>
+          <th>Storage</th>
+          <th>Approx. Days</th>
           <th>Reminder Date</th>
         </tr>
       </thead>
@@ -39,6 +41,8 @@ function ItemTable({ items, setItems }) {
             <td>{item.rawText}</td>
             <td>{item.normalizedName}</td>
             <td>{item.category}</td>
+            <td>{item.storageLocation || "-"}</td>
+            <td>{item.estimatedShelfLifeDays}</td>
             <td>
               <input
                 type="date"

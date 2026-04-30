@@ -17,7 +17,12 @@ function App() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [purchaseDate, setPurchaseDate] = useState("2026-04-19");
   const [rawReceiptText, setRawReceiptText] = useState("");
+  const [parsedItems, setParsedItems] = useState([]);
+  const [normalizedItems, setNormalizedItems] = useState([]);
   const [items, setItems] = useState([]);
+  const [htmlSummary, setHtmlSummary] = useState("");
+  const [classificationProvider, setClassificationProvider] = useState("");
+  const [classificationWarning, setClassificationWarning] = useState("");
   const [downloadUrl, setDownloadUrl] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -37,12 +42,18 @@ function App() {
         ? await processReceiptUpload(selectedFile, purchaseDate)
         : await processReceiptText(receiptText, purchaseDate);
 
-      if (!data.items?.length) {
-        throw new Error("No supported perishable items were found in the receipt.");
-      }
-
       setRawReceiptText(data.rawReceiptText || receiptText);
-      setItems(data.items);
+      setParsedItems(data.parsedItems || []);
+      setNormalizedItems(data.normalizedItems || []);
+      setItems(data.items || []);
+      setHtmlSummary(data.htmlSummary || "");
+      setClassificationProvider(data.classificationProvider || "");
+      setClassificationWarning(data.classificationWarning || "");
+      if (!data.items?.length) {
+        setError(
+          "No supported perishable items were found yet. Review the OCR text below and try a clearer crop, or paste receipt text."
+        );
+      }
       setPage("review");
     } catch (nextError) {
       setError(nextError.message);
@@ -88,7 +99,12 @@ function App() {
     setReceiptText("");
     setSelectedFile(null);
     setRawReceiptText("");
+    setParsedItems([]);
+    setNormalizedItems([]);
     setItems([]);
+    setHtmlSummary("");
+    setClassificationProvider("");
+    setClassificationWarning("");
     setError("");
     setPage("home");
   };
@@ -123,6 +139,11 @@ function App() {
           setItems={setItems}
           purchaseDate={purchaseDate}
           rawReceiptText={rawReceiptText}
+          parsedItems={parsedItems}
+          normalizedItems={normalizedItems}
+          htmlSummary={htmlSummary}
+          classificationProvider={classificationProvider}
+          classificationWarning={classificationWarning}
           onBack={() => setPage("upload")}
           onContinue={handleExport}
           isExporting={isExporting}
@@ -132,6 +153,7 @@ function App() {
       {page === "result" && (
         <Result
           items={items.filter((item) => item.included)}
+          htmlSummary={htmlSummary}
           downloadName="eatable-reminders.ics"
           onDownloadAgain={handleDownloadAgain}
           onRestart={handleRestart}

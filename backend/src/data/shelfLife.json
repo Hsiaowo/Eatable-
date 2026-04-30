@@ -18,5 +18,53 @@
   "avocado": {
     "category": "fruit",
     "fridgeDays": 4
+  },
+  "yogurt": {
+    "category": "dairy",
+    "fridgeDays": 7
+  },
+  "lettuce": {
+    "category": "vegetable",
+    "fridgeDays": 5
+  },
+  "blueberry": {
+    "category": "fruit",
+    "fridgeDays": 5
+  },
+  "raspberry": {
+    "category": "fruit",
+    "fridgeDays": 3
+  },
+  "chicken": {
+    "category": "protein",
+    "fridgeDays": 2
+  },
+  "salmon": {
+    "category": "protein",
+    "fridgeDays": 2
+  },
+  "tomato": {
+    "category": "vegetable",
+    "fridgeDays": 5
+  },
+  "cucumber": {
+    "category": "vegetable",
+    "fridgeDays": 5
+  },
+  "cheese": {
+    "category": "dairy",
+    "fridgeDays": 10
+  },
+  "egg": {
+    "category": "protein",
+    "fridgeDays": 14
+  },
+  "grape": {
+    "category": "fruit",
+    "fridgeDays": 7
+  },
+  "apple": {
+    "category": "fruit",
+    "fridgeDays": 10
   }
 }

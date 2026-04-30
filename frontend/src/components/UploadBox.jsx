@@ -2,7 +2,7 @@ function UploadBox({ receiptText, setReceiptText, selectedFile, setSelectedFile,
   return (
     <div className="upload-box">
       <h2>Receipt Input</h2>
-      <p>Paste receipt text or upload a receipt image. The current OCR flow uses a sample stub on the backend.</p>
+      <p>Paste receipt text or upload a receipt image. Image OCR now uses Tesseract.js, so clearer receipts will work better.</p>
       <label className="field-label" htmlFor="purchase-date">
         Purchase date
       </label>
@@ -14,15 +14,16 @@ function UploadBox({ receiptText, setReceiptText, selectedFile, setSelectedFile,
         onChange={(event) => setPurchaseDate(event.target.value)}
       />
       <label className="field-label" htmlFor="receipt-file">
-        Receipt image
+        Receipt file
       </label>
       <input
         id="receipt-file"
         className="input"
         type="file"
-        accept="image/*"
+        accept=".png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff,.gif,.heic,.heif,.txt,.csv,.json,image/png,image/jpeg,image/webp,image/bmp,image/tiff,image/gif,image/heic,image/heif,text/plain,text/csv,application/json"
         onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
       />
+      <p className="hint">Supported formats: PNG, JPG, JPEG, WEBP, BMP, TIFF, GIF, HEIC, HEIF, TXT, CSV, JSON.</p>
       {selectedFile && <p className="hint">Selected file: {selectedFile.name}</p>}
       <div className="actions">
         <button className="button secondary" type="button" onClick={onFillSample}>

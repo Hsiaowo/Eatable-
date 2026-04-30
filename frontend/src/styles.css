@@ -167,6 +167,28 @@ textarea {
   padding: 8px 12px;
 }
 
+.debug-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.debug-span {
+  grid-column: 1 / -1;
+}
+
+.llm-html {
+  border-top: 1px solid #dce8dc;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.llm-html h2,
+.llm-html h3,
+.llm-html p,
+.llm-html ul {
+  margin-top: 0;
+}
+
 @media (max-width: 640px) {
   .app-shell {
     padding: 16px 12px;

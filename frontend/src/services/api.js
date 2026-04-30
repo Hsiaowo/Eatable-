@@ -1,4 +1,5 @@
-const API_BASE_URL = "http://localhost:3000/api";
+const API_BASE_URL = "http://127.0.0.1:3000/api";
+const REQUEST_TIMEOUT_MS = 60000;
 
 async function ensureOk(response, fallbackMessage) {
   if (response.ok) {
@@ -18,7 +19,7 @@ async function ensureOk(response, fallbackMessage) {
 }
 
 export async function processReceiptText(receiptText, purchaseDate) {
-  const response = await fetch(`${API_BASE_URL}/receipt/test`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/receipt/test`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -36,7 +37,7 @@ export async function processReceiptUpload(file, purchaseDate) {
   formData.append("receipt", file);
   formData.append("purchaseDate", purchaseDate);
 
-  const response = await fetch(`${API_BASE_URL}/receipt/upload`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/receipt/upload`, {
     method: "POST",
     body: formData
   });
@@ -47,7 +48,7 @@ export async function processReceiptUpload(file, purchaseDate) {
 }
 
 export async function exportCalendar(items) {
-  const response = await fetch(`${API_BASE_URL}/reminders/export`, {
+  const response = await fetchWithTimeout(`${API_BASE_URL}/reminders/export`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
@@ -58,4 +59,24 @@ export async function exportCalendar(items) {
   await ensureOk(response, "Failed to export calendar.");
 
   return response.blob();
+}
+
+async function fetchWithTimeout(url, options) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error("The request timed out. Try a smaller or clearer receipt image, or paste receipt text.");
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }

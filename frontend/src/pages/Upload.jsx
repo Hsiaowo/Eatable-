@@ -28,8 +28,9 @@ function Upload({
         />
         <div className="summary-box">
           <h2>MVP Scope</h2>
-          <p>This version supports text paste and image upload. Receipt images are routed through the backend upload endpoint.</p>
+          <p>This version has stronger text receipt parsing and normalization for messy grocery lines.</p>
           <p>Expected output is a parsed list of perishable items with estimated reminder dates.</p>
+          <p>For uploads, text files and receipt images are both supported. OCR accuracy still depends on image quality.</p>
           {error && <p className="error-text">{error}</p>}
         </div>
       </div>
