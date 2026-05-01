@@ -1,5 +1,6 @@
 const API_BASE_URL = "http://127.0.0.1:3000/api";
-const REQUEST_TIMEOUT_MS = 60000;
+const DEFAULT_REQUEST_TIMEOUT_MS = 60000;
+const UPLOAD_REQUEST_TIMEOUT_MS = 120000;
 
 async function ensureOk(response, fallbackMessage) {
   if (response.ok) {
@@ -40,7 +41,7 @@ export async function processReceiptUpload(file, purchaseDate) {
   const response = await fetchWithTimeout(`${API_BASE_URL}/receipt/upload`, {
     method: "POST",
     body: formData
-  });
+  }, UPLOAD_REQUEST_TIMEOUT_MS);
 
   await ensureOk(response, "Failed to process receipt image.");
 
@@ -61,9 +62,9 @@ export async function exportCalendar(items) {
   return response.blob();
 }
 
-async function fetchWithTimeout(url, options) {
+async function fetchWithTimeout(url, options, timeoutMs = DEFAULT_REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     return await fetch(url, {

@@ -21,6 +21,7 @@ function ItemTable({ items, setItems }) {
         <tr>
           <th>Include</th>
           <th>Raw Item</th>
+          <th>Interpreted</th>
           <th>Normalized</th>
           <th>Category</th>
           <th>Storage</th>
@@ -39,6 +40,7 @@ function ItemTable({ items, setItems }) {
               />
             </td>
             <td>{item.rawText}</td>
+            <td>{item.interpretedName || "-"}</td>
             <td>{item.normalizedName}</td>
             <td>{item.category}</td>
             <td>{item.storageLocation || "-"}</td>

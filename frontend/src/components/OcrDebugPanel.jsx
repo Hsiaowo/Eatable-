@@ -10,7 +10,9 @@ function OcrDebugPanel({ rawReceiptText, parsedItems, normalizedItems }) {
         {parsedItems.length ? (
           <ul className="debug-list">
             {parsedItems.map((item, index) => (
-              <li key={`${item}-${index}`}>{item}</li>
+              <li key={`${item}-${index}`}>
+                <strong>Line {index + 1}:</strong> {item}
+              </li>
             ))}
           </ul>
         ) : (
