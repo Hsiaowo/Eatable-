@@ -14,7 +14,7 @@ export function buildCalendarFile(items) {
     lines.push(`UID:eatable-${index}@local`);
     lines.push(`DTSTAMP:${toCalendarDate(item.reminderDate)}T090000Z`);
     lines.push(`DTSTART;VALUE=DATE:${toCalendarDate(item.reminderDate)}`);
-    lines.push(`SUMMARY:Eat ${item.normalizedName}`);
+    lines.push(`SUMMARY:Eat ${item.interpretedName || item.normalizedName}`);
     lines.push(`DESCRIPTION:${buildDescription(item)}`);
     lines.push("END:VEVENT");
   });
@@ -28,6 +28,10 @@ function buildDescription(item) {
   const parts = [
     `Estimated freshness reminder for ${escapeCalendarText(item.rawText)}`
   ];
+
+  if (item.interpretedName) {
+    parts.push(`Interpreted item: ${escapeCalendarText(item.interpretedName)}`);
+  }
 
   if (item.category) {
     parts.push(`Category: ${escapeCalendarText(item.category)}`);

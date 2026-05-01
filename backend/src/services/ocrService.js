@@ -4,7 +4,8 @@ import { parseReceiptText } from "./parseReceiptService.js";
 import { normalizeItems } from "./normalizeItemService.js";
 
 let workerPromise = null;
-const OCR_TIMEOUT_MS = 45000;
+const OCR_TIMEOUT_MS = 15000;
+const TARGET_RECEIPT_WIDTH = 1400;
 const supportedImageMimeTypes = new Set([
   "image/png",
   "image/jpeg",
@@ -43,7 +44,7 @@ export async function runOcr(file) {
   try {
     const worker = await getWorker();
     const variants = await buildRecognitionVariants(file.buffer);
-    const attempts = [];
+    let bestAttempt = null;
 
     for (const variant of variants) {
       const result = await withTimeout(
@@ -53,21 +54,21 @@ export async function runOcr(file) {
       );
 
       const text = result.data.text || "";
-      attempts.push({
+      const attempt = {
         label: variant.label,
         text,
         score: scoreRecognizedText(text),
         confidence: result.data.confidence || 0
-      });
-    }
+      };
 
-    const bestAttempt = attempts.sort((left, right) => {
-      if (right.score !== left.score) {
-        return right.score - left.score;
+      if (isBetterAttempt(attempt, bestAttempt)) {
+        bestAttempt = attempt;
       }
 
-      return right.confidence - left.confidence;
-    })[0];
+      if (bestAttempt && bestAttempt.score >= 16) {
+        break;
+      }
+    }
 
     if (bestAttempt?.text?.trim()) {
       console.log("[ocr] selected variant:", bestAttempt.label, {
@@ -133,7 +134,7 @@ async function getWorker() {
 async function buildRecognitionVariants(inputBuffer) {
   const image = sharp(inputBuffer, { failOn: "none" });
   const metadata = await image.metadata();
-  const targetWidth = Math.max(1800, metadata.width || 0);
+  const targetWidth = Math.max(TARGET_RECEIPT_WIDTH, metadata.width || 0);
   const base = image.rotate().resize({
     width: targetWidth,
     withoutEnlargement: false,
@@ -162,17 +163,7 @@ async function buildRecognitionVariants(inputBuffer) {
       .threshold(170)
       .png()
       .toBuffer()
-      .then((buffer) => ({ label: "threshold-170", buffer })),
-    base
-      .clone()
-      .grayscale()
-      .normalize()
-      .median(1)
-      .sharpen()
-      .threshold(150)
-      .png()
-      .toBuffer()
-      .then((buffer) => ({ label: "median-threshold-150", buffer }))
+      .then((buffer) => ({ label: "threshold-170", buffer }))
   ]);
 
   return variants;
@@ -218,4 +209,16 @@ function scoreRecognizedText(text) {
   const itemLikeLines = lines.filter((line) => /[a-z]/iu.test(line) && /\d/.test(line));
 
   return supportedItems.length * 10 + parsedItems.length * 4 + itemLikeLines.length;
+}
+
+function isBetterAttempt(nextAttempt, currentAttempt) {
+  if (!currentAttempt) {
+    return true;
+  }
+
+  if (nextAttempt.score !== currentAttempt.score) {
+    return nextAttempt.score > currentAttempt.score;
+  }
+
+  return nextAttempt.confidence > currentAttempt.confidence;
 }

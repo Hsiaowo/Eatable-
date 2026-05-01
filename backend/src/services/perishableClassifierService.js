@@ -1,14 +1,22 @@
 import OpenAI from "openai";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { estimateReminders } from "./expiryService.js";
 import { addDays } from "../utils/dateUtils.js";
 
 let openaiClient = null;
+let interpretationRulesPromise = null;
+const OPENAI_TIMEOUT_MS = 12000;
 
 export async function buildPerishableReminders({ parsedItems, normalizedItems, purchaseDate }) {
   if (!process.env.OPENAI_API_KEY) {
     const fallbackItems = estimateReminders(normalizedItems, purchaseDate);
     return {
-      items: fallbackItems,
+      items: fallbackItems.map((item) => ({
+        ...item,
+        interpretedName: item.normalizedName
+      })),
       htmlSummary: buildFallbackHtmlSummary(fallbackItems, purchaseDate, "local-fallback"),
       classificationProvider: "local-fallback",
       classificationWarning: "OPENAI_API_KEY is not configured. Falling back to local shelf-life rules."
@@ -19,7 +27,9 @@ export async function buildPerishableReminders({ parsedItems, normalizedItems, p
     const result = await classifyWithOpenAI({ parsedItems, normalizedItems, purchaseDate });
     return {
       items: result.items.map((item) => ({
+        lineId: item.lineId,
         rawText: item.rawText,
+        interpretedName: item.interpretedName,
         normalizedName: item.normalizedName,
         category: item.category,
         estimatedShelfLifeDays: item.estimatedStorageDays,
@@ -36,7 +46,10 @@ export async function buildPerishableReminders({ parsedItems, normalizedItems, p
     console.error("OpenAI perishable classification failed:", error);
     const fallbackItems = estimateReminders(normalizedItems, purchaseDate);
     return {
-      items: fallbackItems,
+      items: fallbackItems.map((item) => ({
+        ...item,
+        interpretedName: item.normalizedName
+      })),
       htmlSummary: buildFallbackHtmlSummary(fallbackItems, purchaseDate, "local-fallback"),
       classificationProvider: "local-fallback",
       classificationWarning:
@@ -47,91 +60,118 @@ export async function buildPerishableReminders({ parsedItems, normalizedItems, p
 
 async function classifyWithOpenAI({ parsedItems, normalizedItems, purchaseDate }) {
   const client = getOpenAIClient();
-  const response = await client.responses.create({
-    model: process.env.OPENAI_CLASSIFIER_MODEL || "gpt-5-nano",
-    input: [
-      {
-        role: "developer",
-        content: [
-          {
-            type: "input_text",
-            text:
-              "You classify grocery receipt items. Keep only edible perishable groceries that reasonably need a freshness reminder after purchase. Drop non-food items, shelf-stable pantry items, canned goods, dry goods, paper goods, household supplies, fees, taxes, discounts, deposits, and ambiguous store metadata. Use the parsed item text and heuristic normalization hints. Return only clearly perishable items with approximate storage days for normal home storage. Use singular normalized names when possible. Also return an htmlSummary string that is a safe HTML fragment only, with no markdown and no script/style tags. The HTML should use only simple tags like section, h2, p, ul, li, and strong. The HTML should summarize the perishable items, their category, likely storage location, and approximate preservation time."
-          }
-        ]
+  const interpretationRules = await getInterpretationRules();
+  const indexedParsedItems = parsedItems.map((rawText, index) => ({
+    lineId: index + 1,
+    rawText
+  }));
+  const parsedLineLookup = new Map(indexedParsedItems.map((item) => [item.lineId, item.rawText]));
+  const compactHeuristics = normalizedItems.map((item) => ({
+    rawText: item.rawText,
+    normalizedName: item.normalizedName,
+    categoryHint: item.category
+  }));
+
+  const response = await withTimeout(
+    client.responses.create({
+      model: process.env.OPENAI_CLASSIFIER_MODEL || "gpt-5-nano",
+      reasoning: {
+        effort: "minimal"
       },
-      {
-        role: "user",
-        content: [
-          {
-            type: "input_text",
-            text: JSON.stringify(
-              {
-                purchaseDate,
-                parsedItems,
-                heuristicItems: normalizedItems
-              },
-              null,
-              2
-            )
-          }
-        ]
-      }
-    ],
-    text: {
-      format: {
-        type: "json_schema",
-        name: "perishable_receipt_items",
-        strict: true,
-        schema: {
-          type: "object",
-          additionalProperties: false,
-          properties: {
-            items: {
-              type: "array",
-              items: {
-                type: "object",
-                additionalProperties: false,
-                properties: {
-                  rawText: {
-                    type: "string"
-                  },
-                  normalizedName: {
-                    type: "string"
-                  },
-                  category: {
-                    type: "string"
-                  },
-                  estimatedStorageDays: {
-                    type: "integer"
-                  },
-                  storageLocation: {
-                    type: "string",
-                    enum: ["fridge", "room_temperature", "pantry", "freezer", "mixed"]
-                  },
-                  reasoning: {
-                    type: "string"
-                  }
+      max_output_tokens: 900,
+      input: [
+        {
+          role: "developer",
+          content: [
+            {
+              type: "input_text",
+              text: interpretationRules
+            }
+          ]
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text: JSON.stringify(
+                {
+                  purchaseDate,
+                  parsedItems: indexedParsedItems,
+                  heuristicItems: compactHeuristics
                 },
-                required: [
-                  "rawText",
-                  "normalizedName",
-                  "category",
-                  "estimatedStorageDays",
-                  "storageLocation",
-                  "reasoning"
-                ]
+                null,
+                2
+              )
+            }
+          ]
+        }
+      ],
+      text: {
+        format: {
+          type: "json_schema",
+          name: "perishable_receipt_items",
+          strict: true,
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              items: {
+                type: "array",
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  properties: {
+                    lineId: {
+                      type: "integer"
+                    },
+                    rawText: {
+                      type: "string"
+                    },
+                    interpretedName: {
+                      type: "string"
+                    },
+                    normalizedName: {
+                      type: "string"
+                    },
+                    category: {
+                      type: "string"
+                    },
+                    estimatedStorageDays: {
+                      type: "integer"
+                    },
+                    storageLocation: {
+                      type: "string",
+                      enum: ["fridge", "room_temperature", "pantry", "freezer", "mixed"]
+                    },
+                    reasoning: {
+                      type: "string"
+                    }
+                  },
+                  required: [
+                    "lineId",
+                    "rawText",
+                    "interpretedName",
+                    "normalizedName",
+                    "category",
+                    "estimatedStorageDays",
+                    "storageLocation",
+                    "reasoning"
+                  ]
+                }
+              },
+              htmlSummary: {
+                type: "string"
               }
             },
-            htmlSummary: {
-              type: "string"
-            }
-          },
-          required: ["items", "htmlSummary"]
+            required: ["items", "htmlSummary"]
+          }
         }
       }
-    }
-  });
+    }),
+    OPENAI_TIMEOUT_MS,
+    "OpenAI classification timed out."
+  );
 
   const outputText = response.output_text || "";
   if (!outputText.trim()) {
@@ -142,8 +182,11 @@ async function classifyWithOpenAI({ parsedItems, normalizedItems, purchaseDate }
   return {
     items: parsedOutput.items
       .filter((item) => item.estimatedStorageDays > 0)
+      .filter((item) => parsedLineLookup.has(item.lineId))
       .map((item) => ({
         ...item,
+        rawText: parsedLineLookup.get(item.lineId),
+        interpretedName: item.interpretedName.trim(),
         normalizedName: item.normalizedName.trim().toLowerCase(),
         category: item.category.trim().toLowerCase(),
         reasoning: item.reasoning.trim()
@@ -162,6 +205,25 @@ function getOpenAIClient() {
   return openaiClient;
 }
 
+async function getInterpretationRules() {
+  if (!interpretationRulesPromise) {
+    const currentDir = path.dirname(fileURLToPath(import.meta.url));
+    const rulesPath = path.resolve(currentDir, "../../..", "docs", "receipt-interpretation-rules.md");
+    interpretationRulesPromise = readFile(rulesPath, "utf8");
+  }
+
+  return interpretationRulesPromise;
+}
+
+function withTimeout(promise, timeoutMs, message) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(message)), timeoutMs);
+    })
+  ]);
+}
+
 function sanitizeHtmlFragment(html) {
   return html
     .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/giu, "")
@@ -176,7 +238,7 @@ function buildFallbackHtmlSummary(items, purchaseDate, provider) {
     ? items
         .map(
           (item) =>
-            `<li><strong>${escapeHtml(item.normalizedName)}</strong> (${escapeHtml(item.category)}) - about ${item.estimatedShelfLifeDays} day(s), remind on ${escapeHtml(item.reminderDate)}.</li>`
+            `<li><strong>${escapeHtml(item.interpretedName || item.normalizedName)}</strong> (${escapeHtml(item.category)}) - about ${item.estimatedShelfLifeDays} day(s), remind on ${escapeHtml(item.reminderDate)}.</li>`
         )
         .join("")
     : "<li>No perishable items were identified.</li>";

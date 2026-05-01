@@ -21,7 +21,7 @@ const catalog = {
   },
   yogurt: {
     category: "dairy",
-    aliases: ["yogurt", "yoghurt", "greek yogurt", "yogourt"]
+    aliases: ["yogurt", "yoghurt", "greek yogurt", "yogourt", "ygt", "yogt", "ygt strw"]
   },
   lettuce: {
     category: "vegetable",
